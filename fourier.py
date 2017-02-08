@@ -1,4 +1,5 @@
 import numpy
+import numpy.fft
 import math
 
 import matplotlib.pyplot
@@ -7,7 +8,7 @@ import matplotlib.pyplot
 def fourier_series(sample):
 
     n = len(sample)
-    result = numpy.zeros(n, dtype=complex)
+    result = numpy.zeros(n)
 
     for m in range(n):
 
@@ -15,49 +16,50 @@ def fourier_series(sample):
         for p in range(n):
             coeff += sample[p] * numpy.exp(complex(0.0, -2.0 * math.pi * m * p / n))
 
-        result[m] = coeff
+        result[m] = numpy.abs(coeff)
 
     return result
 
+def fourier_series_test():
 
-sample_size = 1024
-sines = 8
-sines_step = 16
+    sample_size = 1024
+    sines = 8
+    sines_step = 16
 
-t = []
-f = []
+    t = []
+    f = []
 
-for x in range(sample_size):
+    for x in range(sample_size):
 
-    t.append(x / float(sample_size))
-    value = 0
+        t.append(x / float(sample_size))
+        value = 0
 
-    for i in range(sines):
-        value += math.sin(2.0 * (sines_step * i + 1.0) * math.pi * x / float(sample_size))
+        for i in range(sines):
+            value += math.sin(2.0 * (sines_step * i + 1.0) * math.pi * x / float(sample_size))
 
-    f.append(value)
+        f.append(value)
 
-matplotlib.pyplot.ion()
+    matplotlib.pyplot.ion()
 
-matplotlib.pyplot.figure(1)
-matplotlib.pyplot.subplot(211)
+    matplotlib.pyplot.figure(1)
+    matplotlib.pyplot.subplot(311)
 
-matplotlib.pyplot.plot(t, f, 'r')
-matplotlib.pyplot.xlabel('t')
-matplotlib.pyplot.ylabel('f(t)')
-matplotlib.pyplot.pause(0.05)
+    matplotlib.pyplot.plot(t, f, 'r')
+    matplotlib.pyplot.xlabel('t')
+    matplotlib.pyplot.ylabel('f(t)')
+    matplotlib.pyplot.pause(0.05)
 
-fourier_series = fourier_series(f)
+    fourier_series = fourier_series(f)
 
-fourier_absolute_values = []
+    matplotlib.pyplot.subplot(312)
+    matplotlib.pyplot.plot(t, fourier_series, 'g')
 
-for x in range(sample_size):
-    fourier_absolute_values.append(numpy.abs(fourier_series[x]))
+    fourier_values = numpy.abs(numpy.fft.fft(f))
 
-matplotlib.pyplot.subplot(212)
-matplotlib.pyplot.plot(t, fourier_absolute_values, 'g')
+    matplotlib.pyplot.subplot(313)
+    matplotlib.pyplot.plot(t, fourier_values)
 
-matplotlib.pyplot.ylabel('fourier_series')
-matplotlib.pyplot.pause(0.05)
+    matplotlib.pyplot.ylabel('fourier_series')
+    matplotlib.pyplot.pause(0.05)
 
-matplotlib.pyplot.show()
+    matplotlib.pyplot.show()
