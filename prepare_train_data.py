@@ -7,6 +7,10 @@ import matplotlib.pyplot
 import tensorflow
 import wave
 import fourier
+from time import ctime
+
+import time as time_module
+
 
 output_classes = 90
 
@@ -17,12 +21,14 @@ max_frame_rate = 44100
 max_spectrogram_length = int((max_frame_rate * max_song_length - sample_size) / time_shift + 1)
 rows = int(sample_size / 2 - 16)
 
-infinity = 1.0e16
-
 image_rows = rows
 image_columns = max_spectrogram_length
+dataset_size = 4096
 
 def prepare_dataset():
+
+    print('[' + ctime() + ']: Data preparation has started.')
+    start_time = time_module.time()
 
     class_offset = 5
 
@@ -68,6 +74,9 @@ def prepare_dataset():
                     description += ', '
                 description += class_names[i-class_offset]
 
+        if description is None:
+            continue
+
         # read raw sound and build spectrogram
         sound = wave.open(file_path, 'r')
         frames_count = sound.getnframes()
@@ -101,7 +110,6 @@ def prepare_dataset():
                 if value > 0.0 and minimal_greater_than_zero > value:
                     minimal_greater_than_zero = value
                 fourier_normalized_absolute[(0, i - 8)] = value
-
 
             # take logarithm and check for infinity
             for i in range(rows):
@@ -137,9 +145,14 @@ def prepare_dataset():
 
         file_index += 1
 
-        if file_index >= 8:
+        if file_index >= dataset_size:
             break
 
-    matplotlib.pyplot.show()
+    #matplotlib.pyplot.show()
+
+    print('[' + ctime() + ']: Data preparation is complete.')
+    end_time = time_module.time()
+    elapsed_time = end_time - start_time
+    print('Elapsed time = {} minutes and {} seconds'.format(int(elapsed_time / 60), int(elapsed_time % 60)))
 
     return (spectrograms, labels)
