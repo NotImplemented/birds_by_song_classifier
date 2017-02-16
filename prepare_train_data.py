@@ -25,15 +25,76 @@ image_rows = rows
 image_columns = max_spectrogram_length
 dataset_size = 4096
 
+wav_path = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_TEST_WAV', 'test')
+labels_path = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_LABELS', 'nips4b_birdchallenge_train_labels.csv')
+
+def cook_spectrogram(file):
+
+    file_path = os.path.abspath(os.path.join(wav_path, file))
+    _, extension = os.path.splitext(file_path)
+
+    if extension != '.wav':
+        return None
+
+    # read raw sound and build spectrogram
+    sound = wave.open(file_path, 'r')
+    frames_count = sound.getnframes()
+    frame_rate = sound.getframerate()
+    sample_width = sound.getsampwidth()
+    sound_channels = sound.getnchannels()
+
+    print('Processing file {}: channels = {}, frames count = {}, frame rate = {}, sample width = {}, duration = {:.4f} seconds'.format(
+            file_path, sound_channels, frames_count, frame_rate, sample_width, float(frames_count) / frame_rate))
+
+    raw_sound = sound.readframes(frames_count)
+    time = 0
+
+    spectrogram = numpy.ndarray((rows, max_spectrogram_length))
+
+    index = 0
+    while time + sample_size < frames_count and index < max_spectrogram_length:
+
+        raw_bytes = raw_sound[time * 2: (time + sample_size) * 2]
+        converted_data = numpy.fromstring(raw_bytes, dtype=numpy.int16)
+        fourier = numpy.fft.fft(converted_data)
+
+        # get only half of fourier coefficients
+        fourier_normalized_converted = numpy.ndarray((1, rows))
+        fourier_normalized_absolute = numpy.ndarray((1, rows))
+
+        minimal_greater_than_zero = float('inf')
+        for i in range(8, rows + 8):
+
+            value = numpy.abs(fourier[i])
+            if value > 0.0 and minimal_greater_than_zero > value:
+                minimal_greater_than_zero = value
+            fourier_normalized_absolute[(0, i - 8)] = value
+
+        # take logarithm and check for infinity
+        for i in range(rows):
+            fourier_normalized_converted[(0, i)] = 10.0 * numpy.log10(
+                max(fourier_normalized_absolute[(0, i)], minimal_greater_than_zero))
+
+        spectrogram[:, index] = fourier_normalized_converted
+
+        time += time_shift
+        index += 1
+
+    # append if necessary
+    start_index = 0
+    while index < max_spectrogram_length:
+        spectrogram[:, index] = spectrogram[:, start_index]
+        start_index += 1
+        index += 1
+
+    return spectrogram
+
 def prepare_dataset():
 
     print('[' + ctime() + ']: Data preparation has started.')
     start_time = time_module.time()
 
     class_offset = 5
-
-    wav_path = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_TEST_WAV', 'test')
-    labels_path = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_LABELS', 'nips4b_birdchallenge_train_labels.csv')
 
     pixel_type = numpy.dtype(numpy.uint16)
     factor = 1.0 / (numpy.iinfo(pixel_type).max - numpy.iinfo(pixel_type).min)
@@ -48,18 +109,13 @@ def prepare_dataset():
 
     print(species)
     print(auxiliary)
+
     class_names = species.split(',')[class_offset:]
     print(class_names)
 
     file_index = 0
     display_count = 8
     for file in os.listdir(wav_path):
-
-        file_path = os.path.abspath(os.path.join(wav_path, file))
-        _, extension = os.path.splitext(file_path)
-
-        if extension != '.wav':
-            continue
 
         # read labels and set up classes
         line = file_labels.readline()
@@ -77,57 +133,14 @@ def prepare_dataset():
         if description is None:
             continue
 
-        # read raw sound and build spectrogram
-        sound = wave.open(file_path, 'r')
-        frames_count = sound.getnframes()
-        frame_rate = sound.getframerate()
-        sample_width = sound.getsampwidth()
-        sound_channels = sound.getnchannels()
-
-        print('Processing file {}: channels = {}, frames count = {}, frame rate = {}, sample width = {}, duration = {:.4f} seconds'.format(file, sound_channels, frames_count, frame_rate, sample_width, float(frames_count) / frame_rate))
         print('Description = {}'.format(description))
 
-        raw_sound = sound.readframes(frames_count)
-        time = 0
-
-        spectrogram = numpy.ndarray((rows, max_spectrogram_length))
-
-        index = 0
-        while time + sample_size < frames_count and index < max_spectrogram_length:
-
-            raw_bytes = raw_sound[time * 2: (time + sample_size) * 2]
-            converted_data = numpy.fromstring(raw_bytes, dtype = numpy.int16)
-            fourier = numpy.fft.fft(converted_data)
-
-            # get only half of fourier coefficients
-            fourier_normalized_converted = numpy.ndarray((1, rows))
-            fourier_normalized_absolute = numpy.ndarray((1, rows))
-
-            minimal_greater_than_zero = float('inf')
-            for i in range(8, rows + 8):
-
-                value = numpy.abs(fourier[i])
-                if value > 0.0 and minimal_greater_than_zero > value:
-                    minimal_greater_than_zero = value
-                fourier_normalized_absolute[(0, i - 8)] = value
-
-            # take logarithm and check for infinity
-            for i in range(rows):
-                fourier_normalized_converted[(0, i)] = 10.0 * numpy.log10(max(fourier_normalized_absolute[(0, i)], minimal_greater_than_zero))
-
-            spectrogram[:, index] = fourier_normalized_converted
-
-            time += time_shift
-            index += 1
-
-        # append if necessary
-        start_index = 0
-        while index < max_spectrogram_length:
-            spectrogram[:, index] = spectrogram[:, start_index]
-            start_index += 1
-            index += 1
+        spectrogram = cook_spectrogram(file)
+        if spectrogram is None:
+            continue
 
         spectrograms.append(spectrogram)
+
         labels.append(label)
 
         if file_index == 0:
