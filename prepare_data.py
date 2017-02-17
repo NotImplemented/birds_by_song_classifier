@@ -12,7 +12,7 @@ from time import ctime
 import time as time_module
 
 
-output_classes = 90
+output_classes = 87
 
 sample_size = 512
 time_shift = int(sample_size * 0.75)
@@ -175,7 +175,7 @@ def prepare_test_dataset():
     print('[' + ctime() + ']: Test data preparation has started.')
     start_time = time_module.time()
 
-    labels = []
+    files = []
     spectrograms = []
 
     for file in os.listdir(wav_path_test):
@@ -188,11 +188,11 @@ def prepare_test_dataset():
             continue
 
         spectrograms.append(spectrogram)
-        labels.append(label)
+        files.append(os.path.basename(file_path))
 
     print('[' + ctime() + ']: Test data preparation is complete.')
     end_time = time_module.time()
     elapsed_time = end_time - start_time
     print('Elapsed time = {} minutes and {} seconds'.format(int(elapsed_time / 60), int(elapsed_time % 60)))
 
-    return (spectrograms, labels)
+    return (files, spectrograms)
