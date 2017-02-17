@@ -25,12 +25,13 @@ image_rows = rows
 image_columns = max_spectrogram_length
 dataset_size = 4096
 
-wav_path = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_TEST_WAV', 'test')
+wav_path_train = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_TEST_WAV', 'train')
+wav_path_test = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_TEST_WAV', 'test')
+
 labels_path = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_LABELS', 'nips4b_birdchallenge_train_labels.csv')
 
-def cook_spectrogram(file):
+def cook_spectrogram(file_path):
 
-    file_path = os.path.abspath(os.path.join(wav_path, file))
     _, extension = os.path.splitext(file_path)
 
     if extension != '.wav':
@@ -89,9 +90,25 @@ def cook_spectrogram(file):
 
     return spectrogram
 
-def prepare_dataset():
+def show_spectrogram(spectrogram, description):
 
-    print('[' + ctime() + ']: Data preparation has started.')
+    display_count = 4
+    figure = matplotlib.pyplot.figure()
+
+    subplot = matplotlib.pyplot.subplot(display_count, 1, 1)
+
+    if description is not None:
+        matplotlib.pyplot.title(description.replace('_', ' '), fontsize = 10)
+
+    subplot.set_yticklabels([])
+    subplot.set_xticklabels([])
+
+    matplotlib.pyplot.imshow(spectrogram)
+    matplotlib.pyplot.show()
+
+def prepare_train_dataset():
+
+    print('[' + ctime() + ']: Train data preparation has started.')
     start_time = time_module.time()
 
     class_offset = 5
@@ -114,8 +131,7 @@ def prepare_dataset():
     print(class_names)
 
     file_index = 0
-    display_count = 8
-    for file in os.listdir(wav_path):
+    for file in os.listdir(wav_path_train):
 
         # read labels and set up classes
         line = file_labels.readline()
@@ -135,35 +151,46 @@ def prepare_dataset():
 
         print('Description = {}'.format(description))
 
-        spectrogram = cook_spectrogram(file)
+        file_path = os.path.abspath(os.path.join(wav_path_train, file))
+        spectrogram = cook_spectrogram(file_path)
         if spectrogram is None:
             continue
 
         spectrograms.append(spectrogram)
-
         labels.append(label)
 
-        if file_index == 0:
-            figure = matplotlib.pyplot.figure()
-
-        if file_index < display_count:
-
-            subplot = matplotlib.pyplot.subplot(display_count, 1, file_index + 1)
-            matplotlib.pyplot.title(description.replace('_', ' '), fontsize=10)
-
-            subplot.set_yticklabels([])
-            subplot.set_xticklabels([])
-
-            matplotlib.pyplot.imshow(spectrogram)
-
         file_index += 1
-
         if file_index >= dataset_size:
             break
 
-    #matplotlib.pyplot.show()
-
     print('[' + ctime() + ']: Data preparation is complete.')
+    end_time = time_module.time()
+    elapsed_time = end_time - start_time
+    print('Elapsed time = {} minutes and {} seconds'.format(int(elapsed_time / 60), int(elapsed_time % 60)))
+
+    return (spectrograms, labels)
+
+def prepare_test_dataset():
+
+    print('[' + ctime() + ']: Test data preparation has started.')
+    start_time = time_module.time()
+
+    labels = []
+    spectrograms = []
+
+    for file in os.listdir(wav_path_test):
+
+        label = numpy.zeros((1, output_classes))
+
+        file_path = os.path.abspath(os.path.join(wav_path_test, file))
+        spectrogram = cook_spectrogram(file_path)
+        if spectrogram is None:
+            continue
+
+        spectrograms.append(spectrogram)
+        labels.append(label)
+
+    print('[' + ctime() + ']: Test data preparation is complete.')
     end_time = time_module.time()
     elapsed_time = end_time - start_time
     print('Elapsed time = {} minutes and {} seconds'.format(int(elapsed_time / 60), int(elapsed_time % 60)))
