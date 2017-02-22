@@ -23,7 +23,7 @@ rows = int(sample_size / 2 - 16)
 
 image_rows = rows
 image_columns = max_spectrogram_length
-dataset_size = 4096
+dataset_size = 8
 
 wav_path_train = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_TEST_WAV', 'train')
 wav_path_test = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_TEST_WAV', 'test')
