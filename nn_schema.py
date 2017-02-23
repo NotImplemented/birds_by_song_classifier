@@ -34,7 +34,7 @@ def variable_summaries(var):
 def create_convolution_layer(layer_name, input_tensor, input_features, output_features):
 
     # TODO: Calculate input features count
-    # TODO: Introduce windows size argument
+    # TODO: Introduce window size argument
 
     with tensorflow.name_scope(layer_name):
 
@@ -99,8 +99,8 @@ def create_fully_connected_layers(input_layer, output_classes):
 
     _, num_rows, num_columns, num_features = input_layer.get_shape().as_list()
 
-    fc_1st = create_max_pooling_layer('fc-1st', input_layer, num_rows * num_columns * num_features, 128)
-    fc_2nd = create_max_pooling_layer('fc-2nd', fc_1st, 128, output_classes)
+    fc_1st = create_fully_connected_layer('fc-1st', input_layer, num_rows * num_columns * num_features, 128)
+    fc_2nd = create_fully_connected_layer('fc-2nd', fc_1st, 128, output_classes)
 
     return fc_2nd
 

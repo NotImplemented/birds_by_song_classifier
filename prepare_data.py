@@ -23,7 +23,7 @@ rows = int(sample_size / 2 - 16)
 
 image_rows = rows
 image_columns = max_spectrogram_length
-dataset_size = 8
+dataset_size = 16
 
 wav_path_train = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_TEST_WAV', 'train')
 wav_path_test = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_TEST_WAV', 'test')
@@ -33,9 +33,6 @@ labels_path = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_LABELS', 'nips4b_birdcha
 def cook_spectrogram(file_path):
 
     _, extension = os.path.splitext(file_path)
-
-    if extension != '.wav':
-        return None
 
     # read raw sound and build spectrogram
     sound = wave.open(file_path, 'r')
@@ -63,20 +60,23 @@ def cook_spectrogram(file_path):
         fourier_normalized_converted = numpy.ndarray((1, rows))
         fourier_normalized_absolute = numpy.ndarray((1, rows))
 
+        epsilon = 0.000005
         minimal_greater_than_zero = float('inf')
         for i in range(8, rows + 8):
 
-            value = numpy.abs(fourier[i])
+            value = numpy.abs(fourier[i]) + epsilon
             if value > 0.0 and minimal_greater_than_zero > value:
                 minimal_greater_than_zero = value
             fourier_normalized_absolute[(0, i - 8)] = value
 
         # take logarithm and check for infinity
         for i in range(rows):
-            fourier_normalized_converted[(0, i)] = 10.0 * numpy.log10(
-                max(fourier_normalized_absolute[(0, i)], minimal_greater_than_zero))
+            fourier_normalized_converted[(0, i)] = 10.0 * numpy.log10(max(fourier_normalized_absolute[(0, i)], minimal_greater_than_zero))
 
         spectrogram[:, index] = fourier_normalized_converted
+
+        if numpy.max(fourier_normalized_converted) == float('inf'):
+            print("!")
 
         time += time_shift
         index += 1
@@ -88,6 +88,10 @@ def cook_spectrogram(file_path):
         start_index += 1
         index += 1
 
+    mx = numpy.max(spectrogram)
+    mn = numpy.min(spectrogram)
+
+    print('Test file {}: max = {}, min = {}'.format(file_path, mx, mn))
     return spectrogram
 
 def show_spectrogram(spectrogram, description):
@@ -178,6 +182,7 @@ def prepare_test_dataset():
     files = []
     spectrograms = []
 
+    file_index = 0
     for file in os.listdir(wav_path_test):
 
         label = numpy.zeros((1, output_classes))
@@ -189,6 +194,10 @@ def prepare_test_dataset():
 
         spectrograms.append(spectrogram)
         files.append(os.path.basename(file_path))
+
+        file_index += 1
+        if file_index >= dataset_size:
+            break
 
     print('[' + ctime() + ']: Test data preparation is complete.')
     end_time = time_module.time()
