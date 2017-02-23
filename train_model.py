@@ -9,9 +9,9 @@ import prepare_data
 import nn_schema
 
 batch_size = 8
-learning_epochs = 48
+learning_epochs = 16
 output_classes = 87
-learning_rate = 0.00005
+learning_rate = 0.000004
 
 summaries_directory = (os.path.join(os.getcwd(), 'summary'))
 
@@ -103,7 +103,7 @@ print('Starting evaluating predictions.\n')
 
 with open('trained_test_predictions.csv', 'w') as test_predictions_file:
 
-    test_predictions_file.write('ID,Probability\n')
+    test_predictions_file.write('ID, Probability\n')
 
     for i in range(len(test_files)):
         file_name = test_files[i]
@@ -112,4 +112,4 @@ with open('trained_test_predictions.csv', 'w') as test_predictions_file:
         for j in range(output_classes):
             test_predictions_file.write('{}_classnumber_{}, {}\n'.format(file_name, (j+1), output[(0, j)]) )
 
-print('Prediction is completed')
+print('Prediction is completed.')

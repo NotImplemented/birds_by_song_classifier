@@ -19,11 +19,11 @@ time_shift = int(sample_size * 0.75)
 max_song_length = 6.5
 max_frame_rate = 44100
 max_spectrogram_length = int((max_frame_rate * max_song_length - sample_size) / time_shift + 1)
-rows = int(sample_size / 2 - 16)
+rows = int(sample_size / 2)
 
 image_rows = rows
 image_columns = max_spectrogram_length
-dataset_size = 16
+dataset_size = 1024
 
 wav_path_train = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_TEST_WAV', 'train')
 wav_path_test = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_TEST_WAV', 'test')
@@ -60,14 +60,14 @@ def cook_spectrogram(file_path):
         fourier_normalized_converted = numpy.ndarray((1, rows))
         fourier_normalized_absolute = numpy.ndarray((1, rows))
 
-        epsilon = 0.000005
+        epsilon = 0.000002
         minimal_greater_than_zero = float('inf')
-        for i in range(8, rows + 8):
+        for i in range(rows):
 
             value = numpy.abs(fourier[i]) + epsilon
             if value > 0.0 and minimal_greater_than_zero > value:
                 minimal_greater_than_zero = value
-            fourier_normalized_absolute[(0, i - 8)] = value
+            fourier_normalized_absolute[(0, i)] = value
 
         # take logarithm and check for infinity
         for i in range(rows):
