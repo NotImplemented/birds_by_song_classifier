@@ -14,7 +14,7 @@ import time as time_module
 
 output_classes = 87
 
-sample_size = 512
+sample_size = 1024
 time_shift = int(sample_size * 0.75)
 max_song_length = 6.5
 max_frame_rate = 44100
@@ -61,22 +61,30 @@ def cook_spectrogram(file_path):
         fourier_normalized_absolute = numpy.ndarray((1, rows))
 
         epsilon = 0.000002
-        minimal_greater_than_zero = float('inf')
+        minimal_greater_than_zero = epsilon
         for i in range(rows):
 
-            value = numpy.abs(fourier[i]) + epsilon
+            value = numpy.abs(fourier[i])
             if value > 0.0 and minimal_greater_than_zero > value:
                 minimal_greater_than_zero = value
-            fourier_normalized_absolute[(0, i)] = value
+            fourier_normalized_absolute[(0, i)] = value + 1.0
 
         # take logarithm and check for infinity
         for i in range(rows):
-            fourier_normalized_converted[(0, i)] = 10.0 * numpy.log10(max(fourier_normalized_absolute[(0, i)], minimal_greater_than_zero))
+            fourier_normalized_converted[(0, i)] = 10*numpy.log10(max(fourier_normalized_absolute[(0, i)], minimal_greater_than_zero))
+
+        #for i in range(rows):
+            #fourier_normalized_converted[(0, i)] = fourier_normalized_absolute[(0, i)]
+
+        #mx = numpy.max(fourier_normalized_converted)
+        #mn = numpy.min(fourier_normalized_converted)
+
+        #fourier_normalized_converted = (fourier_normalized_converted - mn) / (mx - mn)
 
         spectrogram[:, index] = fourier_normalized_converted
 
-        if numpy.max(fourier_normalized_converted) == float('inf'):
-            print("!")
+        #if numpy.max(fourier_normalized_converted) == float('inf'):
+        #    print("!")
 
         time += time_shift
         index += 1
@@ -91,12 +99,16 @@ def cook_spectrogram(file_path):
     mx = numpy.max(spectrogram)
     mn = numpy.min(spectrogram)
 
+    spectrogram = (spectrogram - mn) / (mx - mn)
+
     print('Test file {}: max = {}, min = {}'.format(file_path, mx, mn))
+
+    #show_spectrogram(spectrogram, 'sample')
     return spectrogram
 
 def show_spectrogram(spectrogram, description):
 
-    display_count = 4
+    display_count = 1
     figure = matplotlib.pyplot.figure()
 
     subplot = matplotlib.pyplot.subplot(display_count, 1, 1)
@@ -115,7 +127,7 @@ def prepare_train_dataset():
     print('[' + ctime() + ']: Train data preparation has started.')
     start_time = time_module.time()
 
-    class_offset = 5
+    class_offset = 4
 
     pixel_type = numpy.dtype(numpy.uint16)
     factor = 1.0 / (numpy.iinfo(pixel_type).max - numpy.iinfo(pixel_type).min)

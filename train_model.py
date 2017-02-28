@@ -8,10 +8,10 @@ from tensorflow.contrib.slim.python.slim.model_analyzer import tensor_descriptio
 import prepare_data
 import nn_schema
 
-batch_size = 8
+batch_size = 4
 learning_epochs = 16
 output_classes = 87
-learning_rate = 0.000004
+learning_rate = 0.00002
 
 summaries_directory = (os.path.join(os.getcwd(), 'summary'))
 
@@ -101,15 +101,25 @@ print('Output classes = {}'.format(output_classes))
 print('Test data size = {}'.format(len(test_images)))
 print('Starting evaluating predictions.\n')
 
-with open('trained_test_predictions.csv', 'w') as test_predictions_file:
+with open('test_predictions.csv', 'w') as test_predictions_file:
 
-    test_predictions_file.write('ID, Probability\n')
+    test_predictions_file.write('ID,Probability\n')
 
     for i in range(len(test_files)):
         file_name = test_files[i]
         test_image = test_images[i]
         output = y_output_sigmoid.eval(feed_dict = {x_place: test_image.reshape((1, input_size_height, input_size_width))})
         for j in range(output_classes):
-            test_predictions_file.write('{}_classnumber_{}, {}\n'.format(file_name, (j+1), output[(0, j)]) )
+            test_predictions_file.write('{}_classnumber_{}, {}\n'.format(file_name, j + 1, output[(0, j)]) )
+
+with open('train_predictions.csv', 'w') as test_predictions_file:
+    test_predictions_file.write('ID,Probability\n')
+
+    for i in range(len(images)):
+        train_image = images[i]
+        output = y_output_sigmoid.eval(
+            feed_dict={x_place: train_image.reshape((1, input_size_height, input_size_width))})
+        for j in range(output_classes):
+            test_predictions_file.write('train_{}_classnumber_{}, {}\n'.format(i + 1, j + 1, output[(0, j)]))
 
 print('Prediction is completed.')

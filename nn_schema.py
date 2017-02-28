@@ -5,7 +5,7 @@ def weight_variable(shape):
     return tensorflow.Variable(initial)
 
 def bias_variable(shape):
-    initial = tensorflow.constant(0.1, shape = shape)
+    initial = tensorflow.constant(0.0, shape = shape)
     return tensorflow.Variable(initial)
 
 def convolution_layer(x, W):
@@ -75,10 +75,13 @@ def create_convolution_layers(input_image):
     conv_3rd = create_convolution_layer('conv-3rd', pool_2nd, 32, 64)
     pool_3rd = create_max_pooling_layer('pool-3rd', conv_3rd)
 
-    conv_4th = create_convolution_layer('conv-4th', pool_3rd, 64, 128)
-    pool_4th = create_max_pooling_layer('pool-4th', conv_4th)
+#    conv_4th = create_convolution_layer('conv-4th', pool_3rd, 64, 128)
+#    pool_4th = create_max_pooling_layer('pool-4th', conv_4th)
 
-    return pool_4th
+#    conv_5th = create_convolution_layer('conv-5th', pool_4th, 128, 256)
+#    pool_5th = create_max_pooling_layer('pool-5th', conv_5th)
+
+    return pool_3rd
 
 def create_fully_connected_layer(layer_name, input_layer, input_features, output_features):
 
@@ -99,10 +102,10 @@ def create_fully_connected_layers(input_layer, output_classes):
 
     _, num_rows, num_columns, num_features = input_layer.get_shape().as_list()
 
-    fc_1st = create_fully_connected_layer('fc-1st', input_layer, num_rows * num_columns * num_features, 256)
-    fc_2nd = create_fully_connected_layer('fc-2nd', fc_1st, 256, output_classes)
+    fc_1st = create_fully_connected_layer('fc-1st', input_layer, num_rows * num_columns * num_features, output_classes)
+    #fc_2nd = create_fully_connected_layer('fc-2nd', fc_1st, 256, output_classes)
 
-    return fc_2nd
+    return fc_1st
 
 
 def create_schema(x_image, output_classes):
