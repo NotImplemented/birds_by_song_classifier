@@ -8,16 +8,17 @@ from tensorflow.contrib.slim.python.slim.model_analyzer import tensor_descriptio
 import prepare_data
 import nn_schema
 
-batch_size = 4
-learning_epochs = 16
+batch_size = 16
+learning_epochs = 48
 output_classes = 87
-learning_rate = 0.00002
+learning_rate = 0.000002
 
 summaries_directory = (os.path.join(os.getcwd(), 'summary'))
 
 input_size_height = prepare_data.image_rows
 input_size_width = prepare_data.image_columns
 
+keep_probability = tensorflow.placeholder(tensorflow.float32)
 
 x_place = tensorflow.placeholder(tensorflow.float32, shape=[None, input_size_height, input_size_width])
 print('Input tensor size = {}'.format(x_place.get_shape()))
@@ -28,7 +29,7 @@ print('Output tensor size = {}'.format(y_place.get_shape()))
 x_image = tensorflow.reshape(x_place, [-1, input_size_height, input_size_width, 1])
 print('Image tensor size = {}'.format(x_image.get_shape()))
 
-y_output = nn_schema.create_schema(x_image, output_classes)
+y_output = nn_schema.create_schema(x_image, output_classes, keep_probability)
 y_output_sigmoid = tensorflow.nn.sigmoid(y_output)
 
 
@@ -84,7 +85,7 @@ while(True):
         index += 1
 
     epoch = index / len(images) + 1
-    summary, _, cross_entropy_batch = session.run([merged, train_step, cross_entropy], feed_dict = {x_place: batch, y_place: label})
+    summary, _, cross_entropy_batch = session.run([merged, train_step, cross_entropy], feed_dict = {x_place: batch, y_place: label, keep_probability: 0.5})
 
     print("Step #%d Epoch #%d: cross-entropy = %g, images = %d" % (step, epoch, cross_entropy_batch, index))
     test_writer.add_summary(summary, step)
@@ -108,7 +109,7 @@ with open('test_predictions.csv', 'w') as test_predictions_file:
     for i in range(len(test_files)):
         file_name = test_files[i]
         test_image = test_images[i]
-        output = y_output_sigmoid.eval(feed_dict = {x_place: test_image.reshape((1, input_size_height, input_size_width))})
+        output = y_output_sigmoid.eval(feed_dict = {x_place: test_image.reshape((1, input_size_height, input_size_width)), keep_probability:1.0})
         for j in range(output_classes):
             test_predictions_file.write('{}_classnumber_{}, {}\n'.format(file_name, j + 1, output[(0, j)]) )
 
@@ -118,7 +119,7 @@ with open('train_predictions.csv', 'w') as test_predictions_file:
     for i in range(len(images)):
         train_image = images[i]
         output = y_output_sigmoid.eval(
-            feed_dict={x_place: train_image.reshape((1, input_size_height, input_size_width))})
+            feed_dict={x_place: train_image.reshape((1, input_size_height, input_size_width)), keep_probability:1.0})
         for j in range(output_classes):
             test_predictions_file.write('train_{}_classnumber_{}, {}\n'.format(i + 1, j + 1, output[(0, j)]))
 

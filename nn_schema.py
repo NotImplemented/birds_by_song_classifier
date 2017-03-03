@@ -1,11 +1,11 @@
 import tensorflow
 
 def weight_variable(shape):
-    initial = tensorflow.truncated_normal(shape)
+    initial = tensorflow.truncated_normal(shape, stddev=0.12)
     return tensorflow.Variable(initial)
 
 def bias_variable(shape):
-    initial = tensorflow.constant(0.0, shape = shape)
+    initial = tensorflow.constant(0.12, shape = shape)
     return tensorflow.Variable(initial)
 
 def convolution_layer(x, W):
@@ -75,13 +75,16 @@ def create_convolution_layers(input_image):
     conv_3rd = create_convolution_layer('conv-3rd', pool_2nd, 32, 64)
     pool_3rd = create_max_pooling_layer('pool-3rd', conv_3rd)
 
-#    conv_4th = create_convolution_layer('conv-4th', pool_3rd, 64, 128)
-#    pool_4th = create_max_pooling_layer('pool-4th', conv_4th)
+    conv_4th = create_convolution_layer('conv-4th', pool_3rd, 64, 128)
+    pool_4th = create_max_pooling_layer('pool-4th', conv_4th)
 
-#    conv_5th = create_convolution_layer('conv-5th', pool_4th, 128, 256)
-#    pool_5th = create_max_pooling_layer('pool-5th', conv_5th)
+    conv_5th = create_convolution_layer('conv-5th', pool_4th, 128, 256)
+    pool_5th = create_max_pooling_layer('pool-5th', conv_5th)
 
-    return pool_3rd
+    conv_6th = create_convolution_layer('conv-6th', pool_5th, 256, 512)
+    pool_6th = create_max_pooling_layer('pool-6th', conv_6th)
+
+    return pool_6th
 
 def create_fully_connected_layer(layer_name, input_layer, input_features, output_features):
 
@@ -98,19 +101,21 @@ def create_fully_connected_layer(layer_name, input_layer, input_features, output
 
         return h_fully_connected
 
-def create_fully_connected_layers(input_layer, output_classes):
+def create_fully_connected_layers(input_layer, output_classes, keep_probability):
 
     _, num_rows, num_columns, num_features = input_layer.get_shape().as_list()
 
-    fc_1st = create_fully_connected_layer('fc-1st', input_layer, num_rows * num_columns * num_features, output_classes)
-    #fc_2nd = create_fully_connected_layer('fc-2nd', fc_1st, 256, output_classes)
+    fc_1st = create_fully_connected_layer('fc-1st', input_layer, num_rows * num_columns * num_features, 256)
+    fc1_drop = tensorflow.nn.dropout(fc_1st, keep_probability)
 
-    return fc_1st
+    fc_2nd = create_fully_connected_layer('fc-2nd', fc1_drop, 256, output_classes)
+
+    return fc_2nd
 
 
-def create_schema(x_image, output_classes):
+def create_schema(x_image, output_classes, keep_probability):
 
     last_convolution = create_convolution_layers(x_image)
-    output = create_fully_connected_layers(last_convolution, output_classes)
+    output = create_fully_connected_layers(last_convolution, output_classes, keep_probability)
 
     return output

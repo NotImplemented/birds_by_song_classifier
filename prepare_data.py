@@ -8,13 +8,12 @@ import tensorflow
 import wave
 import fourier
 from time import ctime
-
 import time as time_module
 
 
 output_classes = 87
 
-sample_size = 1024
+sample_size = 512
 time_shift = int(sample_size * 0.75)
 max_song_length = 6.5
 max_frame_rate = 44100
