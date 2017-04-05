@@ -11,21 +11,27 @@ from time import ctime
 import time as time_module
 
 
-output_classes = 87
+output_classes = 35
 
 sample_size = 512
-time_shift = int(sample_size * 0.75)
-max_song_length = 6.5
+time_shift = int(sample_size / 2)
+
+max_song_length = 30
+sample_length = 5 # sample length in seconds
+
 max_frame_rate = 44100
-max_spectrogram_length = int((max_frame_rate * max_song_length - sample_size) / time_shift + 1)
+max_spectrogram_length = int((max_frame_rate * sample_length - sample_size) / time_shift + 1)
 rows = int(sample_size / 2)
 
 image_rows = rows
 image_columns = max_spectrogram_length
-dataset_size = 1024
+dataset_size = 4
 
-wav_path_train = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_TEST_WAV', 'train')
-wav_path_test = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_TEST_WAV', 'test')
+wav_path_train_nips = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_TEST_WAV', 'train')
+wav_path_test_nips = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_TEST_WAV', 'test')
+
+wav_path_train_mlsp = os.path.join('mlsp_train_set', 'train_set')
+wav_path_test_mlsp = os.path.join('mlsp_train_set', 'test_set')
 
 labels_path = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_LABELS', 'nips4b_birdchallenge_train_labels.csv')
 
@@ -46,44 +52,35 @@ def cook_spectrogram(file_path):
     raw_sound = sound.readframes(frames_count)
     time = 0
 
-    spectrogram = numpy.ndarray((rows, max_spectrogram_length))
+    spectrogram = numpy.ndarray((rows, int((frames_count - sample_size) / time_shift) + 1 ))
 
     index = 0
-    while time + sample_size < frames_count and index < max_spectrogram_length:
+    while time + sample_size < frames_count:
 
-        raw_bytes = raw_sound[time * 2: (time + sample_size) * 2]
+        raw_bytes = raw_sound[time * 2 : (time + sample_size) * 2]
         converted_data = numpy.fromstring(raw_bytes, dtype=numpy.int16)
         fourier = numpy.fft.fft(converted_data)
 
-        # get only half of fourier coefficients
-        fourier_normalized_converted = numpy.ndarray((1, rows))
-        fourier_normalized_absolute = numpy.ndarray((1, rows))
+        # use only half of fourier coefficients
+        fourier_normalized = numpy.ndarray((1, rows))
+        fourier_absolute = numpy.ndarray((1, rows))
 
-        epsilon = 0.000002
-        minimal_greater_than_zero = epsilon
         for i in range(rows):
 
             value = numpy.abs(fourier[i])
-            if value > 0.0 and minimal_greater_than_zero > value:
-                minimal_greater_than_zero = value
-            fourier_normalized_absolute[(0, i)] = value + 1.0
+            fourier_absolute[(0, i)] = value
 
         # take logarithm and check for infinity
         for i in range(rows):
-            fourier_normalized_converted[(0, i)] = 10*numpy.log10(max(fourier_normalized_absolute[(0, i)], minimal_greater_than_zero))
+            fourier_normalized[(0, i)] = fourier_absolute[(0, i)]
 
-        #for i in range(rows):
-            #fourier_normalized_converted[(0, i)] = fourier_normalized_absolute[(0, i)]
+        mx = numpy.max(fourier_normalized)
+        mn = numpy.min(fourier_normalized)
 
-        #mx = numpy.max(fourier_normalized_converted)
-        #mn = numpy.min(fourier_normalized_converted)
+        #if mn != mx:
+        #   fourier_normalized = (fourier_normalized - mn) / (mx - mn)
 
-        #fourier_normalized_converted = (fourier_normalized_converted - mn) / (mx - mn)
-
-        spectrogram[:, index] = fourier_normalized_converted
-
-        #if numpy.max(fourier_normalized_converted) == float('inf'):
-        #    print("!")
+        spectrogram[:, index] = numpy.sqrt(fourier_normalized + 1.0)
 
         time += time_shift
         index += 1
@@ -99,6 +96,14 @@ def cook_spectrogram(file_path):
     mn = numpy.min(spectrogram)
 
     spectrogram = (spectrogram - mn) / (mx - mn)
+
+    spectrogram = numpy.sqrt(spectrogram)
+    #spectrogram = numpy.max(spectrogram, 0.9) / 10.0
+
+    #for i in range(rows):
+    #    for j in range(max_spectrogram_length):
+    #        if spectrogram[i, j] < 0.5:
+    #            spectrogram[i, j] = 0.0;
 
     print('Test file {}: max = {}, min = {}'.format(file_path, mx, mn))
 
@@ -126,53 +131,33 @@ def prepare_train_dataset():
     print('[' + ctime() + ']: Train data preparation has started.')
     start_time = time_module.time()
 
-    class_offset = 4
-
     pixel_type = numpy.dtype(numpy.uint16)
     factor = 1.0 / (numpy.iinfo(pixel_type).max - numpy.iinfo(pixel_type).min)
 
     labels = []
     spectrograms = []
 
-    file_labels = open(labels_path)
-    file_labels.readline()
-    species = file_labels.readline()
-    auxiliary = file_labels.readline()
-
-    print(species)
-    print(auxiliary)
-
-    class_names = species.split(',')[class_offset:]
-    print(class_names)
-
     file_index = 0
-    for file in os.listdir(wav_path_train):
+    for file in os.listdir(wav_path_train_mlsp):
 
         # read labels and set up classes
-        line = file_labels.readline()
-        classes = line.split(',')
         label = numpy.zeros((1, output_classes))
-        description = ''
+        label[(0, file_index)] = 1.0
 
-        for i in range(1, len(classes)):
-            if classes[i]:
-                label[(0, i - class_offset)] = 1.0
-                if description:
-                    description += ', '
-                description += class_names[i-class_offset]
-
-        if description is None:
-            continue
-
-        print('Description = {}'.format(description))
-
-        file_path = os.path.abspath(os.path.join(wav_path_train, file))
+        file_path = os.path.abspath(os.path.join(wav_path_train_mlsp, file))
         spectrogram = cook_spectrogram(file_path)
         if spectrogram is None:
             continue
 
-        spectrograms.append(spectrogram)
-        labels.append(label)
+        _, max_length = spectrogram.shape
+        length = 0
+        while length + image_columns < max_length:
+            sample = spectrogram[:, length : length + image_columns]
+
+            spectrograms.append(sample)
+            labels.append(label)
+
+            length += int(image_columns / 2)
 
         file_index += 1
         if file_index >= dataset_size:
@@ -194,11 +179,11 @@ def prepare_test_dataset():
     spectrograms = []
 
     file_index = 0
-    for file in os.listdir(wav_path_test):
+    for file in os.listdir(wav_path_test_mlsp):
 
         label = numpy.zeros((1, output_classes))
 
-        file_path = os.path.abspath(os.path.join(wav_path_test, file))
+        file_path = os.path.abspath(os.path.join(wav_path_test_mlsp, file))
         spectrogram = cook_spectrogram(file_path)
         if spectrogram is None:
             continue

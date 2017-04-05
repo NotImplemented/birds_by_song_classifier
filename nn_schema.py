@@ -81,10 +81,7 @@ def create_convolution_layers(input_image):
     conv_5th = create_convolution_layer('conv-5th', pool_4th, 128, 256)
     pool_5th = create_max_pooling_layer('pool-5th', conv_5th)
 
-    conv_6th = create_convolution_layer('conv-6th', pool_5th, 256, 512)
-    pool_6th = create_max_pooling_layer('pool-6th', conv_6th)
-
-    return pool_6th
+    return pool_5th
 
 def create_fully_connected_layer(layer_name, input_layer, input_features, output_features):
 
