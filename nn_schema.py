@@ -31,7 +31,7 @@ def variable_summaries(var):
         tensorflow.summary.histogram('histogram', var)
 
 
-def create_convolution_layer(layer_name, input_tensor, input_features, output_features):
+def create_convolution_layer(layer_name, input_tensor, input_features, output_features, width, height):
 
     # TODO: Calculate input features count
     # TODO: Introduce window size argument
@@ -39,7 +39,7 @@ def create_convolution_layer(layer_name, input_tensor, input_features, output_fe
     with tensorflow.name_scope(layer_name):
 
         with tensorflow.name_scope('weights'):
-            Weight_convolution = weight_variable([6, 6, input_features, output_features])
+            Weight_convolution = weight_variable([width, height, input_features, output_features])
             variable_summaries(Weight_convolution)
 
         with tensorflow.name_scope('biases'):
@@ -66,19 +66,19 @@ def create_max_pooling_layer(layer_name, input_tensor):
 
 def create_convolution_layers(input_image):
 
-    conv_1st = create_convolution_layer('conv-1st', input_image, 1, 16)
+    conv_1st = create_convolution_layer('conv-1st', input_image, 1, 64, 5, 5)
     pool_1st = create_max_pooling_layer('pool-1st', conv_1st)
 
-    conv_2nd = create_convolution_layer('conv-2nd', pool_1st, 16, 32)
+    conv_2nd = create_convolution_layer('conv-2nd', pool_1st, 64, 64, 5, 5)
     pool_2nd = create_max_pooling_layer('pool-2nd', conv_2nd)
 
-    conv_3rd = create_convolution_layer('conv-3rd', pool_2nd, 32, 64)
+    conv_3rd = create_convolution_layer('conv-3rd', pool_2nd, 64, 128, 5, 5)
     pool_3rd = create_max_pooling_layer('pool-3rd', conv_3rd)
 
-    conv_4th = create_convolution_layer('conv-4th', pool_3rd, 64, 128)
+    conv_4th = create_convolution_layer('conv-4th', pool_3rd, 128, 256, 5, 5)
     pool_4th = create_max_pooling_layer('pool-4th', conv_4th)
 
-    conv_5th = create_convolution_layer('conv-5th', pool_4th, 128, 256)
+    conv_5th = create_convolution_layer('conv-5th', pool_4th, 256, 256, 3, 3)
     pool_5th = create_max_pooling_layer('pool-5th', conv_5th)
 
     return pool_5th
@@ -102,10 +102,10 @@ def create_fully_connected_layers(input_layer, output_classes, keep_probability)
 
     _, num_rows, num_columns, num_features = input_layer.get_shape().as_list()
 
-    fc_1st = create_fully_connected_layer('fc-1st', input_layer, num_rows * num_columns * num_features, 256)
+    fc_1st = create_fully_connected_layer('fc-1st', input_layer, num_rows * num_columns * num_features, 1024)
     fc1_drop = tensorflow.nn.dropout(fc_1st, keep_probability)
 
-    fc_2nd = create_fully_connected_layer('fc-2nd', fc1_drop, 256, output_classes)
+    fc_2nd = create_fully_connected_layer('fc-2nd', fc1_drop, 1024, output_classes)
 
     return fc_2nd
 

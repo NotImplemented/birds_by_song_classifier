@@ -11,10 +11,10 @@ from time import ctime
 import time as time_module
 
 
-output_classes = 35
+output_classes = 4
 
 sample_size = 512
-time_shift = int(sample_size / 2)
+time_shift = int(sample_size / 4)
 
 max_song_length = 30
 sample_length = 5 # sample length in seconds
@@ -30,8 +30,8 @@ dataset_size = 4
 wav_path_train_nips = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_TEST_WAV', 'train')
 wav_path_test_nips = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_TEST_WAV', 'test')
 
-wav_path_train_mlsp = os.path.join('mlsp_train_set', 'train_set')
-wav_path_test_mlsp = os.path.join('mlsp_train_set', 'test_set')
+wav_path_train_mlsp = os.path.join('mlsp_data_set', 'train_set')
+wav_path_test_mlsp = os.path.join('mlsp_data_set', 'test_set')
 
 labels_path = os.path.join('NIPS4B_BIRD_CHALLENGE_TRAIN_LABELS', 'nips4b_birdchallenge_train_labels.csv')
 

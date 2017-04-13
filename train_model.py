@@ -12,8 +12,8 @@ import prepare_data
 import nn_schema
 
 batch_size = 11
-learning_epochs = 80
-output_classes = 35
+learning_epochs = 20
+output_classes = 4
 learning_rate = 0.000004
 
 summaries_directory = (os.path.join(os.getcwd(), 'summary'))
@@ -35,13 +35,13 @@ print('Image tensor size = {}'.format(x_image.get_shape()))
 with tensorflow.name_scope('output'):
     with tensorflow.name_scope('raw'):
         y_output = nn_schema.create_schema(x_image, output_classes, keep_probability)
-    with tensorflow.name_scope('sigmoid'):
+    with tensorflow.name_scope('acivation'):
         y_output_softmax = tensorflow.nn.softmax(y_output)
 
 
 with tensorflow.name_scope('cross_entropy'):
     with tensorflow.name_scope('difference'):
-        softmax_cross_entropy_with_logits = tensorflow.nn.softmax_cross_entropy_with_logits(y_output, y_place)
+        softmax_cross_entropy_with_logits = tensorflow.nn.softmax_cross_entropy_with_logits(logits=y_output, labels=y_place)
         tensorflow.summary.histogram('sigmoid_cross_entropy_with_logits', softmax_cross_entropy_with_logits)
 
     with tensorflow.name_scope('total'):
